@@ -41,12 +41,37 @@ class Game:
 
     def __init__(self):
         self.is_active = True
+        self.rules = {
+            "1": "Get card",
+            "2": "Pass cards",
+            "0": "Quit"
+        }
+
+    def create_game(self):
+        while self.is_active:
+            self.play_game()
+
+    def process_input(self, value):
+        decision = self.rules.get(value, -1)
+        if decision == -1:
+            decision = self.process_input(input('Make your decision: '))
+        return decision
+
+    def player_move(self):
+        ...
 
     def play_game(self):
-        ...
+        print("Your's cards:")
+        print("[Card1] [Card2]")
+        while True:
+            cmnd = self.process_input(input('Make your decision: '))
+            if cmnd == "Quit":
+                break
+            else:
+                print(cmnd)
+        self.is_active = False
 
 
 if __name__ == '__main__':
     game = Game()
-    while game.is_active:
-        game.play_game()
+    game.create_game()

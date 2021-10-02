@@ -1,4 +1,53 @@
-import icecream as ic
+class Game:
+
+    rules = {
+        "1": "Hit (Get card)",
+        "2": "Stands (Pass cards)",
+        "0": "Quit"
+    }
+
+    def __init__(self):
+        self.is_active = True
+        self.players = [Player(
+            input("Enter your name: "),
+            ['2', '3']
+        ),
+            Dealer(['1', '6'])
+        ]
+
+    def create_game(self):
+        while self.is_active:
+            self.play_game()
+            print("Game ended!")
+
+    def process_input(self, value=None):
+        decision = self.rules.get(value, -1)
+        if decision == -1:
+            decision = self.process_input(input('Make your decision: '))
+        return decision
+
+    def player_move(self, player):
+
+        print(f"[{player.name}] Your's cards:")
+        print(f"{player.cards}")
+        while True:
+            action = self.process_input()
+            if action == "Quit":
+                self.output(player, "Quit the game")
+                self.is_active = False
+                break
+            else:
+                self.output(player, action)
+                if player.check_sum():
+                    self.output(player, "Sum of cards goes over 21! You are lost!")
+
+    def output(self, curr_player, text):
+        print(f"[{curr_player.name}] {text}")
+
+    def play_game(self):
+        for player in self.players:
+            if self.is_active:
+                self.player_move(player)
 
 
 class Player:
@@ -15,19 +64,25 @@ class Player:
 
     def check_sum(self):
         if self.sum_of_cards > 21:
-            return False
-        return True
+            return True
+        return False
 
     def get_sum_of_cards(self):
         return self.sum_of_cards
 
 
-class Dealer(Player):
-    def __init__(self, name, cards):
+class Dealer(Player, Game):
+    def __init__(self, cards):
         super().__init__("Dealer", cards)
 
     def get_card(self):  # TODO add rules
         super(Dealer, self).get_card()
+
+    def process_input(self, value=None):
+        if self.sum_of_cards < 17:
+            return super(Dealer, self).process_input("1")
+        else:
+            return super(Dealer, self).process_input("2")
 
 
 class Cards:
@@ -35,41 +90,6 @@ class Cards:
     def __init__(self):
         # TODO create list of cards
         ...  # TODO random sort cards
-
-
-class Game:
-
-    def __init__(self):
-        self.is_active = True
-        self.rules = {
-            "1": "Get card",
-            "2": "Pass cards",
-            "0": "Quit"
-        }
-
-    def create_game(self):
-        while self.is_active:
-            self.play_game()
-
-    def process_input(self, value):
-        decision = self.rules.get(value, -1)
-        if decision == -1:
-            decision = self.process_input(input('Make your decision: '))
-        return decision
-
-    def player_move(self):
-        ...
-
-    def play_game(self):
-        print("Your's cards:")
-        print("[Card1] [Card2]")
-        while True:
-            cmnd = self.process_input(input('Make your decision: '))
-            if cmnd == "Quit":
-                break
-            else:
-                print(cmnd)
-        self.is_active = False
 
 
 if __name__ == '__main__':

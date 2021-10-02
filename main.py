@@ -1,58 +1,84 @@
 from terminal_playing_cards import Deck
 from terminal_playing_cards import View
+import time
 
 
 class Game:
-
     def __init__(self):
         self.is_active = True
         self.deck = Cards()
         self.players = [Player(
             input("Enter your name: "),
-            self.deck.get_cards(2)
+            self.deck.get_cards()
         ),
             Dealer(
-                self.deck.get_cards(2)
+                self.deck.get_cards()
             )
         ]
 
     def create_game(self):
+        print(" ____________________________\n"
+              "|AVAILABLE MOVES:            |\n"
+              "|(1) - Hit card (Get a card).|\n"
+              "|(2) - Stands (Pass cards).  |\n"
+              "|(0) - Quit the game.        |\n"
+              " ____________________________\n")
+        time.sleep(1)
         while self.is_active:
             self.play_game()
-        print("Game ended!")
+        print("\nGAME ENDED!\n")
+        self.restart_game()
+
+    def restart_game(self):
+        answer = input("Do you want to play again [Y/N]?  ")
+        if answer in ("Y", "y", "yes", "Yes", "YES"):
+            new_game = Game()
+            new_game.create_game()
 
     def player_move(self, player):
         self.deck.print_cards(player)
-        while True:
+        while not player.is_stand:
             action = player.process_input()
-            if action == "Quit":
-                self.output(player, "Quit the game!")
-                self.is_active = False
-                break
-            elif action == "Stand":
-                self.output(player, "Stands!")
-                break
-            else:
-                action(self, player)
-                self.deck.print_cards(player)
-                if player.check_sum():
-                    self.output(player, "Sum of cards goes over 21! You are lost!")
-                    self.is_active = False
-                    break
-
-    def output(self, curr_player, text):
-        print(f"[{curr_player.name}] {text}")
+            action(self, player)
 
     def play_game(self):
         for player in self.players:
             if self.is_active:
                 self.player_move(player)
+        self.find_winner()
 
     def hit_card(self, player):
         player.add_card(self.deck.get_cards(1))
+        self.deck.print_cards(player)
+        if player.check_sum():
+            self.output(player, "Sum of cards goes over 21! Player lost!")
+            player.is_stand = True
+            player.is_lose = True
+            # self.is_active = False   # Remove comment if you want to play without DRAW
 
-    def stands(self, player):
-        ...
+    def stand(self, player):
+        self.output(player, "Stands!")
+        player.is_stand = True
+
+    def quit(self, player):
+        self.output(player, "Quit the game!")
+        player.is_stand = True
+        player.is_lose = True
+        self.is_active = False
+
+    def find_winner(self):
+        candidates = [player for player in self.players if not player.is_lose]
+        if len(candidates) == 0:
+            print("*  DRAW!  *")
+        elif len(candidates) == 1:
+            print(f"*  {candidates[0].name} - WINNER!  *")
+        else:
+            winner = max(candidates, key=lambda player: player.sum_of_cards)
+            print(f"*  {winner.name} - WINNER!  *")
+        self.is_active = False
+
+    def output(self, curr_player, text):
+        print(f"[{curr_player.name}] {text} \n")
 
 
 class Player:
@@ -60,10 +86,12 @@ class Player:
     def __init__(self, name, cards):
         self.rules = {
             "1": Game.hit_card,
-            "2": "Stand",
-            "0": "Quit"
+            "2": Game.stand,
+            "0": Game.quit
         }
         self.name = name
+        self.is_stand = False
+        self.is_lose = False
         self.cards = cards
         self.sum_of_cards = self.get_sum_of_cards()
 
@@ -97,6 +125,7 @@ class Dealer(Player):
         super().__init__("Dealer", cards)
 
     def process_input(self, value=None):
+        time.sleep(1.5)
         if self.sum_of_cards < 17:
             return super(Dealer, self).process_input("1")
         else:
@@ -132,7 +161,7 @@ class Cards:
         return [self.deck.pop() for _ in range(count)]
 
     def print_cards(self, player):
-        print(f"[{player.name}] YOURS CARDS:")
+        print(f"[{player.name}] CARDS:")
         print(View(player.cards))
         print(f"SUM OF CARDS: {player.sum_of_cards}")
 

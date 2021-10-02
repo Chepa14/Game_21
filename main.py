@@ -1,45 +1,44 @@
-class Game:
+from terminal_playing_cards import Deck
+from terminal_playing_cards import View
 
-    rules = {
-        "1": "Hit (Get card)",
-        "2": "Stands (Pass cards)",
-        "0": "Quit"
-    }
+
+class Game:
 
     def __init__(self):
         self.is_active = True
+        self.deck = Cards()
         self.players = [Player(
             input("Enter your name: "),
-            ['2', '3']
+            self.deck.get_cards(2)
         ),
-            Dealer(['1', '6'])
+            Dealer(
+                self.deck.get_cards(2)
+            )
         ]
 
     def create_game(self):
         while self.is_active:
             self.play_game()
-            print("Game ended!")
-
-    def process_input(self, value=None):
-        decision = self.rules.get(value, -1)
-        if decision == -1:
-            decision = self.process_input(input('Make your decision: '))
-        return decision
+        print("Game ended!")
 
     def player_move(self, player):
-
-        print(f"[{player.name}] Your's cards:")
-        print(f"{player.cards}")
+        self.deck.print_cards(player)
         while True:
-            action = self.process_input()
+            action = player.process_input()
             if action == "Quit":
-                self.output(player, "Quit the game")
+                self.output(player, "Quit the game!")
                 self.is_active = False
                 break
+            elif action == "Stand":
+                self.output(player, "Stands!")
+                break
             else:
-                self.output(player, action)
+                action(self, player)
+                self.deck.print_cards(player)
                 if player.check_sum():
                     self.output(player, "Sum of cards goes over 21! You are lost!")
+                    self.is_active = False
+                    break
 
     def output(self, curr_player, text):
         print(f"[{curr_player.name}] {text}")
@@ -49,18 +48,30 @@ class Game:
             if self.is_active:
                 self.player_move(player)
 
+    def hit_card(self, player):
+        player.add_card(self.deck.get_cards(1))
+
+    def stands(self, player):
+        ...
+
 
 class Player:
 
     def __init__(self, name, cards):
+        self.rules = {
+            "1": Game.hit_card,
+            "2": "Stand",
+            "0": "Quit"
+        }
         self.name = name
-        self.cards = cards  # TODO give this from class Cards
-        self.sum_of_cards = 0
+        self.cards = cards
+        self.sum_of_cards = self.get_sum_of_cards()
 
-    def get_card(self):
-        card = self.cards.get_new_card()
-        card_value = self.cards.get_card_value(card)
-        self.sum_of_cards += card_value
+    def process_input(self, value=None):
+        decision = self.rules.get(value, -1)
+        if decision == -1:
+            decision = self.process_input(input('Make your decision: '))
+        return decision
 
     def check_sum(self):
         if self.sum_of_cards > 21:
@@ -68,15 +79,22 @@ class Player:
         return False
 
     def get_sum_of_cards(self):
-        return self.sum_of_cards
+        sum = 0
+        for card in self.cards:
+            sum += card.value
+        return sum
+
+    def update_sum(self):
+        self.sum_of_cards = self.get_sum_of_cards()
+
+    def add_card(self, card):
+        self.cards.extend(card)
+        self.update_sum()
 
 
-class Dealer(Player, Game):
+class Dealer(Player):
     def __init__(self, cards):
         super().__init__("Dealer", cards)
-
-    def get_card(self):  # TODO add rules
-        super(Dealer, self).get_card()
 
     def process_input(self, value=None):
         if self.sum_of_cards < 17:
@@ -86,10 +104,37 @@ class Dealer(Player, Game):
 
 
 class Cards:
+    CUSTOM_DECK_SPEC = {
+        "A": {"clubs": 11, "diamonds": 11, "spades": 11, "hearts": 11},
+        "2": {"clubs": 2, "diamonds": 2, "spades": 2, "hearts": 2},
+        "3": {"clubs": 3, "diamonds": 3, "spades": 3, "hearts": 3},
+        "4": {"clubs": 4, "diamonds": 4, "spades": 4, "hearts": 4},
+        "5": {"clubs": 5, "diamonds": 5, "spades": 5, "hearts": 5},
+        "6": {"clubs": 6, "diamonds": 6, "spades": 6, "hearts": 6},
+        "7": {"clubs": 7, "diamonds": 7, "spades": 7, "hearts": 7},
+        "8": {"clubs": 8, "diamonds": 8, "spades": 8, "hearts": 8},
+        "9": {"clubs": 9, "diamonds": 9, "spades": 9, "hearts": 9},
+        "10": {"clubs": 10, "diamonds": 10, "spades": 10, "hearts": 10},
+        "J": {"clubs": 2, "diamonds": 2, "spades": 2, "hearts": 2},
+        "Q": {"clubs": 3, "diamonds": 3, "spades": 3, "hearts": 3},
+        "K": {"clubs": 4, "diamonds": 4, "spades": 4, "hearts": 4},
+    }
 
     def __init__(self):
-        # TODO create list of cards
-        ...  # TODO random sort cards
+        self.deck = self.create_shuffle_deck()
+
+    def create_shuffle_deck(self):
+        deck = Deck(self.CUSTOM_DECK_SPEC)
+        deck.shuffle()
+        return deck
+
+    def get_cards(self, count=2):
+        return [self.deck.pop() for _ in range(count)]
+
+    def print_cards(self, player):
+        print(f"[{player.name}] YOURS CARDS:")
+        print(View(player.cards))
+        print(f"SUM OF CARDS: {player.sum_of_cards}")
 
 
 if __name__ == '__main__':

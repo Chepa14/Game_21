@@ -54,7 +54,7 @@ class Game:
             self.output(player, "Sum of cards goes over 21! Player lost!")
             player.is_stand = True
             player.is_lose = True
-            # self.is_active = False   # Remove comment if you want to play without DRAW
+            self.is_active = False
 
     def stand(self, player):
         self.output(player, "Stands!")
@@ -68,9 +68,7 @@ class Game:
 
     def find_winner(self):
         candidates = [player for player in self.players if not player.is_lose]
-        if len(candidates) == 0:
-            print("*  DRAW!  *")
-        elif len(candidates) == 1:
+        if len(candidates) == 1:
             print(f"*  {candidates[0].name} - WINNER!  *")
         else:
             winner = max(candidates, key=lambda player: player.sum_of_cards)
